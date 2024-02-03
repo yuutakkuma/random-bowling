@@ -42,19 +42,13 @@ export class Game {
   }
 
   start() {
-    console.log('game start')
-
     // 投球ボタンへ反映
     const bolingBtn = document.querySelector('.bowling_btn')
-    bolingBtn?.addEventListener('click', () => {
-      this.bowling()
-    })
+    bolingBtn?.addEventListener('click', this.bowling)
 
     // リセットボタンへ反映
     const resetBtn = document.querySelector('.reset_btn')
-    resetBtn?.addEventListener('click', () => {
-      this.reset()
-    })
+    resetBtn?.addEventListener('click', this.reset)
   }
 
   /**
@@ -180,7 +174,7 @@ export class Game {
     console.log(this.count)
 
     this.currentRoundText.textContent = `ラウンド ${this.round + 1}`
-    this.currentCountText.textContent = `投球 ${this.count}目`
+    this.currentCountText.textContent = `投球 ${this.count}回目`
     this.currentScoreText.textContent = randomScore ? `今の投球結果: ${randomScore}` : '投球ボタンを押してね！'
   }
 }
