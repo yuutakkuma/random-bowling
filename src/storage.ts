@@ -1,5 +1,5 @@
 type SaveItem = {
-  round: number
+  flame: number
   score: number | string
 }
 
@@ -11,7 +11,7 @@ export class Storage {
   static data: number[] | string[] | undefined[] = []
 
   static save(item: SaveItem) {
-    this.data[item.round] = item.score
+    this.data[item.flame] = item.score
   }
 
   static reset() {
