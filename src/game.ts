@@ -47,6 +47,17 @@ export class Game {
         return
       }
     })
+
+    // リセット処理
+    const resetBtn = document.querySelector('.reset_btn')
+    resetBtn?.addEventListener('click', () => {
+      this.count = 1
+      this.round = 0
+      Storage.reset()
+      scores.forEach(element => {
+        element.textContent = ''
+      })
+    })
   }
 
   private getRandomNum(num: { max: number }) {
