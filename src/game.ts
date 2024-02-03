@@ -130,10 +130,10 @@ export class Game {
      * 2球目且つスペア
      * - スペアを取った場合、次の投球分を加算することができる
      * @example
-     * ラウンド1 - 1 => 3
-     * ラウンド1 - 2 => 7 スペア！！
+     * フレーム1 - 1 => 3
+     * フレーム1 - 2 => 7 スペア！！
      *
-     * ラウンド2 - 1 => 5 この時点でラウンド1の得点 = 15となる
+     * フレーム2 - 1 => 5 この時点でフレーム1の得点 = 15となる
      *
      */
     const firstScore = Storage.data[this.flame]
@@ -159,7 +159,7 @@ export class Game {
 
   /**
    * @description
-   * 最終ラウンドの処理
+   * 最終フレームの処理
    */
   private lastFlame(item: Score) {
     const { score } = item
