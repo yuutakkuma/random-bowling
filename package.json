@@ -4,8 +4,9 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "start": "yarn build && webpack serve --open",
-    "build": "webpack"
+    "start": "yarn build:dev && webpack serve --open",
+    "build:dev": "webpack",
+    "build:prod": "webpack --config ./webpack.prod.js --mode production"
   },
   "devDependencies": {
     "css-loader": "^6.10.0",
