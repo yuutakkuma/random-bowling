@@ -1,6 +1,6 @@
 type SaveItem = {
   round: number
-  score: number
+  score: number | string
 }
 
 /**
@@ -8,7 +8,7 @@ type SaveItem = {
  * ゲームデータが保存されてるクラス
  */
 export class Storage {
-  static data: number[] | undefined[] = []
+  static data: number[] | string[] | undefined[] = []
 
   static save(item: SaveItem) {
     this.data[item.round] = item.score
