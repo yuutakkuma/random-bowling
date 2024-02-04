@@ -1,6 +1,12 @@
 type SaveItem = {
   flame: number
   score: number | string
+  strikeStatus: StrikeStatus
+}
+
+export type StrikeStatus = {
+  isStrike: boolean
+  count: number
 }
 
 /**
@@ -8,13 +14,17 @@ type SaveItem = {
  * ゲームデータが保存されてるクラス
  */
 export class Storage {
-  static data: number[] | string[] | undefined[] = []
+  static scoreData: number[] | string[] | undefined[] = []
+
+  static strikeStatus: StrikeStatus[] = []
 
   static save(item: SaveItem) {
-    this.data[item.flame] = item.score
+    this.scoreData[item.flame] = item.score
+    this.strikeStatus[item.flame] = item.strikeStatus
   }
 
   static reset() {
-    this.data = []
+    this.scoreData = []
+    this.strikeStatus = []
   }
 }

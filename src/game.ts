@@ -1,18 +1,23 @@
-import { Storage } from './storage'
+import { Storage, StrikeStatus } from './storage'
 
 type Score = {
-  score: string | number
+  score: number
 }
 
 type UpdateScore = Score & {
   flame: number
+  strikeStatus: StrikeStatus
 }
 
 export class Game {
   // 0スタートとする
   private flame = 0
 
-  private count: 1 | 2 | 3 = 1
+  // 1フレーム単位での現在カウント
+  private currentCount: 1 | 2 | 3 = 1
+
+  // カウント総数
+  private totalCount: number = 0
 
   private scoresElement: NodeListOf<Element>
 
@@ -67,7 +72,6 @@ export class Game {
    */
   private getRandomNum(num: { max: number }) {
     const { max } = num
-    console.log({ max })
 
     return Math.floor(Math.random() * max + 1)
   }
@@ -77,16 +81,37 @@ export class Game {
    * スコアを更新する
    */
   private updateScore(item: UpdateScore) {
-    const { flame, score } = item
-    Storage.save({ flame, score })
+    const { flame, score, strikeStatus } = item
+    Storage.save({ flame, score, strikeStatus })
     this.scoresElement[flame].textContent = score.toString()
 
     if (this.isSpare) {
       const updatedBeforeFlameScore = this.beforeFlameScore + Number(score)
-      Storage.save({ flame: flame - 1, score: updatedBeforeFlameScore })
+      Storage.save({ flame: flame - 1, score: updatedBeforeFlameScore, strikeStatus: Storage.strikeStatus[flame - 1] })
       this.scoresElement[flame - 1].textContent = updatedBeforeFlameScore.toString()
       this.isSpare = false
     }
+
+    // ストライクチェック
+    Storage.strikeStatus.forEach((status, flameIndex) => {
+      // ストライクフラグがtrue 且つ ストライク後から3球までの値を加算する
+      if (status.isStrike && status.count !== this.totalCount && this.totalCount <= status.count + 3) {
+        const existScoreData = Storage.scoreData[flameIndex]
+        const scoreData = this.increment(existScoreData, item.score)
+        const strikeStatus = Storage.strikeStatus[flameIndex]
+
+        Storage.save({ flame: flameIndex, score: scoreData, strikeStatus })
+        this.scoresElement[flameIndex].textContent = scoreData.toString()
+      }
+    })
+
+    // 合計スコアの処理
+    let totalCount = 0
+    for (let i = 0; i < Storage.scoreData.length; i++) {
+      totalCount += Number(Storage.scoreData[i])
+    }
+
+    this.scoresElement[10].textContent = totalCount.toString()
   }
 
   /**
@@ -94,10 +119,11 @@ export class Game {
    * 投球ボタン クリック処理
    */
   private bowling() {
-    const storageScore = Storage.data[this.flame]
+    const storageScore = Storage.scoreData[this.flame]
     const maxRandomNumber = 10 - (typeof storageScore === 'number' ? storageScore : 0)
 
     const randomScore = this.getRandomNum({ max: maxRandomNumber })
+    this.totalCount += 1
 
     if (this.flame === 10) {
       alert('ゲーム終了')
@@ -113,16 +139,24 @@ export class Game {
     }
 
     // ストライク判定
-    if (this.count === 1 && randomScore === 10) {
-      this.updateScore({ flame: this.flame, score: randomScore })
+    if (this.currentCount === 1 && randomScore === 10) {
+      this.updateScore({
+        flame: this.flame,
+        score: randomScore,
+        strikeStatus: { isStrike: true, count: this.totalCount }
+      })
       this.updateFlame({ score: randomScore })
       return
     }
 
     // 1球目且つ10未満
-    if (this.count === 1 && randomScore < 10) {
-      this.updateScore({ flame: this.flame, score: randomScore })
-      this.count = 2
+    if (this.currentCount === 1 && randomScore < 10) {
+      this.updateScore({
+        flame: this.flame,
+        score: randomScore,
+        strikeStatus: { isStrike: false, count: this.totalCount }
+      })
+      this.currentCount = 2
       return
     }
 
@@ -130,60 +164,68 @@ export class Game {
      * 2球目且つスペア
      * - スペアを取った場合、次の投球分を加算することができる
      * @example
-     * ラウンド1 - 1 => 3
-     * ラウンド1 - 2 => 7 スペア！！
+     * フレーム1 - 1 => 3
+     * フレーム1 - 2 => 7 スペア！！
      *
-     * ラウンド2 - 1 => 5 この時点でラウンド1の得点 = 15となる
+     * フレーム2 - 1 => 5 この時点でフレーム1の得点 = 15となる
      *
      */
-    const firstScore = Storage.data[this.flame]
-    if (this.count === 2 && typeof firstScore === 'number' && firstScore + randomScore === 10) {
+    const firstScore = Storage.scoreData[this.flame]
+    if (this.currentCount === 2 && typeof firstScore === 'number' && firstScore + randomScore === 10) {
       const score = firstScore + randomScore
-      this.updateScore({ flame: this.flame, score })
+      this.updateScore({ flame: this.flame, score, strikeStatus: { isStrike: false, count: this.totalCount } })
       this.updateFlame({ score })
-      this.count = 1
+      this.currentCount = 1
       this.isSpare = true
       this.beforeFlameScore = score
       return
     }
 
     // 2球目
-    if (this.count === 2 && typeof firstScore === 'number') {
+    if (this.currentCount === 2 && typeof firstScore === 'number') {
       const score = firstScore + randomScore
-      this.updateScore({ flame: this.flame, score })
+      this.updateScore({ flame: this.flame, score, strikeStatus: { isStrike: false, count: this.totalCount } })
       this.updateFlame({ score })
-      this.count = 1
+      this.currentCount = 1
       return
     }
   }
 
   /**
    * @description
-   * 最終ラウンドの処理
+   * 最終フレームの処理
    */
   private lastFlame(item: Score) {
     const { score } = item
     // 1球目
-    if (this.count === 1) {
-      this.updateScore({ flame: this.flame, score })
-      this.count = 2
+    if (this.currentCount === 1) {
+      this.updateScore({ flame: this.flame, score, strikeStatus: { isStrike: score === 10, count: this.totalCount } })
+      this.currentCount = 2
       return
     }
 
-    const storageScore = Storage.data[this.flame]
+    const storageScore = Storage.scoreData[this.flame]
     const incremented = this.increment(score, storageScore)
     const isNextCount = incremented >= 10
     // 2球目で且つ3球目がある場合
-    if (this.count === 2 && isNextCount) {
-      this.updateScore({ flame: this.flame, score: incremented })
-      this.count = 3
+    if (this.currentCount === 2 && isNextCount) {
+      this.updateScore({
+        flame: this.flame,
+        score: incremented,
+        strikeStatus: { isStrike: score === 10, count: this.totalCount }
+      })
+      this.currentCount = 3
       return
     }
 
     // 2球目で且つ3球目が無い 又は3球目
-    this.updateScore({ flame: this.flame, score: incremented })
+    this.updateScore({
+      flame: this.flame,
+      score: incremented,
+      strikeStatus: { isStrike: score === 10, count: this.totalCount }
+    })
     this.updateFlame({ score })
-    this.count = 1
+    this.currentCount = 1
     return
   }
 
@@ -192,7 +234,7 @@ export class Game {
    * リセットボタン リセット処理
    */
   private reset() {
-    this.count = 1
+    this.currentCount = 1
     this.flame = 0
     this.beforeFlameScore = 0
     this.scoresElement.forEach(element => {
@@ -213,7 +255,7 @@ export class Game {
 
   private updateDescription(randomScore: number | undefined) {
     this.currentFlameText.textContent = `フレーム ${this.flame + 1}`
-    this.currentCountText.textContent = `投球 ${this.count}回目`
+    this.currentCountText.textContent = `投球 ${this.currentCount}回目`
     this.currentScoreText.textContent = randomScore ? `今の投球結果: ${randomScore}` : '投球ボタンを押してね！'
   }
 
