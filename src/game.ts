@@ -104,6 +104,14 @@ export class Game {
         this.scoresElement[flameIndex].textContent = scoreData.toString()
       }
     })
+
+    // 合計スコアの処理
+    let totalCount = 0
+    for (let i = 0; i < Storage.scoreData.length; i++) {
+      totalCount += Number(Storage.scoreData[i])
+    }
+
+    this.scoresElement[10].textContent = totalCount.toString()
   }
 
   /**
