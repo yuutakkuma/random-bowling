@@ -12,7 +12,8 @@ export class Game {
   // 0スタートとする
   private flame = 0
 
-  private count: 1 | 2 | 3 = 1
+  // 1フレーム単位での現在カウント
+  private currentCount: 1 | 2 | 3 = 1
 
   private scoresElement: NodeListOf<Element>
 
@@ -113,16 +114,16 @@ export class Game {
     }
 
     // ストライク判定
-    if (this.count === 1 && randomScore === 10) {
+    if (this.currentCount === 1 && randomScore === 10) {
       this.updateScore({ flame: this.flame, score: randomScore })
       this.updateFlame({ score: randomScore })
       return
     }
 
     // 1球目且つ10未満
-    if (this.count === 1 && randomScore < 10) {
+    if (this.currentCount === 1 && randomScore < 10) {
       this.updateScore({ flame: this.flame, score: randomScore })
-      this.count = 2
+      this.currentCount = 2
       return
     }
 
@@ -137,22 +138,22 @@ export class Game {
      *
      */
     const firstScore = Storage.data[this.flame]
-    if (this.count === 2 && typeof firstScore === 'number' && firstScore + randomScore === 10) {
+    if (this.currentCount === 2 && typeof firstScore === 'number' && firstScore + randomScore === 10) {
       const score = firstScore + randomScore
       this.updateScore({ flame: this.flame, score })
       this.updateFlame({ score })
-      this.count = 1
+      this.currentCount = 1
       this.isSpare = true
       this.beforeFlameScore = score
       return
     }
 
     // 2球目
-    if (this.count === 2 && typeof firstScore === 'number') {
+    if (this.currentCount === 2 && typeof firstScore === 'number') {
       const score = firstScore + randomScore
       this.updateScore({ flame: this.flame, score })
       this.updateFlame({ score })
-      this.count = 1
+      this.currentCount = 1
       return
     }
   }
@@ -164,9 +165,9 @@ export class Game {
   private lastFlame(item: Score) {
     const { score } = item
     // 1球目
-    if (this.count === 1) {
+    if (this.currentCount === 1) {
       this.updateScore({ flame: this.flame, score })
-      this.count = 2
+      this.currentCount = 2
       return
     }
 
@@ -174,16 +175,16 @@ export class Game {
     const incremented = this.increment(score, storageScore)
     const isNextCount = incremented >= 10
     // 2球目で且つ3球目がある場合
-    if (this.count === 2 && isNextCount) {
+    if (this.currentCount === 2 && isNextCount) {
       this.updateScore({ flame: this.flame, score: incremented })
-      this.count = 3
+      this.currentCount = 3
       return
     }
 
     // 2球目で且つ3球目が無い 又は3球目
     this.updateScore({ flame: this.flame, score: incremented })
     this.updateFlame({ score })
-    this.count = 1
+    this.currentCount = 1
     return
   }
 
@@ -192,7 +193,7 @@ export class Game {
    * リセットボタン リセット処理
    */
   private reset() {
-    this.count = 1
+    this.currentCount = 1
     this.flame = 0
     this.beforeFlameScore = 0
     this.scoresElement.forEach(element => {
@@ -213,7 +214,7 @@ export class Game {
 
   private updateDescription(randomScore: number | undefined) {
     this.currentFlameText.textContent = `フレーム ${this.flame + 1}`
-    this.currentCountText.textContent = `投球 ${this.count}回目`
+    this.currentCountText.textContent = `投球 ${this.currentCount}回目`
     this.currentScoreText.textContent = randomScore ? `今の投球結果: ${randomScore}` : '投球ボタンを押してね！'
   }
 
